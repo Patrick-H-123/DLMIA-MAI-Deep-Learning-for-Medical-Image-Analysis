@@ -19,13 +19,13 @@
 # 
 # ``Remember to comment your code and provide some discussion on the results obtained for each section.``
 
-# In[14]:
+# In[1]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 
 
-# In[15]:
+# In[2]:
 
 
 import numpy as np
@@ -59,7 +59,7 @@ from skimage.transform import radon
 # Data was taken from https://www.cancerimagingarchive.net/collection/lungct-diagnosis/ 
 # 
 
-# In[16]:
+# In[3]:
 
 
 from pathlib import Path
@@ -74,7 +74,7 @@ from scipy.ndimage import gaussian_filter
 import plotly.graph_objects as go
 
 
-# In[17]:
+# In[4]:
 
 
 # ---------- 1) Read DICOM series ----------
@@ -106,7 +106,7 @@ def read_series(dicom_dir: Path):
 sorted_slices = read_series(DATA_DIR)
 
 
-# In[18]:
+# In[5]:
 
 
 # ---------- 2) 2D visualisation with window/level ----------
@@ -150,7 +150,7 @@ for ax in axes:
 plt.show()
 
 
-# In[24]:
+# In[6]:
 
 
 # ---------- Convert to Hounsfield Units (HU) ----------
@@ -242,7 +242,7 @@ print(f"  Bone voxels: {np.sum(bone_mask_cleaned)} ({np.sum(bone_mask_cleaned) /
 
 
 
-# In[32]:
+# In[7]:
 
 
 # ---------- 4) 3D rendering with marching cubes ----------
@@ -445,7 +445,7 @@ for thresh in thresholds_to_try:
 
 
 
-# In[41]:
+# In[8]:
 
 
 def create_circular_mask(h, w, center=None, radius=None):
@@ -463,17 +463,17 @@ def create_circular_mask(h, w, center=None, radius=None):
 # https://newbedev.com/how-can-i-create-a-circular-mask-for-a-numpy-array
 
 
-# In[45]:
+# In[18]:
 
 
-def show_phantom_2d(phantom, size=(3, 3)):
+def show_phantom_2d(phantom, size=(3, 3), title="2D Phantom"):
     """
     Simple 2D visualization of the phantom
     """
     plt.figure(figsize=size)
-    plt.imshow(phantom, cmap='viridis', vmin=0, vmax=2)
+    plt.imshow(phantom, cmap='gray', vmin=0, vmax=2)
     plt.colorbar(label='Pixel Intensity')
-    plt.title('2D Phantom')
+    plt.title(title)
     plt.xlabel('X (pixels)')
     plt.ylabel('Y (pixels)')
     plt.show()
@@ -490,7 +490,7 @@ tissue2_radius = 5    #pixels
 
 # Create empty phantom (background) (2D array with background value(shape (256, 256)))
 phantom = np.full((phantom_size, phantom_size), background_value, dtype=np.float32)
-show_phantom_2d(phantom)
+show_phantom_2d(phantom, title="Empty Phantom")
 
 # Create Tissue 1 (large circle) - centered
 center_phantom = (phantom_size // 2, phantom_size // 2)
@@ -499,7 +499,7 @@ tissue1_mask = create_circular_mask(phantom_size, phantom_size,
                                    radius=tissue1_radius)
 phantom[tissue1_mask] = tissue1_value
 
-show_phantom_2d(phantom)
+show_phantom_2d(phantom, title="After Adding Tissue 1")
 
 #create Tissue 2 (small circle) - offset
 tissue2_center = (phantom_size // 2 + tissue1_radius//2, phantom_size // 2 + tissue1_radius//2)
@@ -508,7 +508,7 @@ tissue2_mask = create_circular_mask(phantom_size, phantom_size,
                                    radius=tissue2_radius)
 phantom[tissue2_mask] = tissue2_value
 
-show_phantom_2d(phantom)
+show_phantom_2d(phantom, title="After Adding Tissue 2")
 
 
 
@@ -524,11 +524,59 @@ show_phantom_2d(phantom)
 # 
 # ``Questions``: How do the sinograms changes with number of projections? What is the effect of increasing/decrasing the number of projections? 
 
-# In[ ]:
+# In[53]:
 
 
-# insert your code here
+def plot_sinogram(sinogram, title="Sinogram - every 5°"):
+    # Plot
+    plt.figure(figsize=(10, 4))
 
+    plt.subplot(1, 2, 1)
+    plt.imshow(phantom, cmap='gray', vmin=0, vmax=2)
+    plt.title('Phantom')
+    plt.colorbar()
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(sinogram, cmap='gray', aspect='auto')
+    plt.title(title)
+    plt.xlabel('Angle index')
+    plt.ylabel('Detector position')
+    plt.colorbar()
+
+    plt.tight_layout()
+    plt.show()
+    
+# Take projections at different angles
+theta = np.linspace(0, 360, 25, endpoint=False)  
+sinogram = radon(phantom, theta=theta)
+#sinogram = radon(phantom, theta=theta, circle=True)
+
+plot_sinogram(sinogram , title = "Sinogram - 25 projections")
+
+# Take projections at different angles
+theta_50 = np.linspace(0, 360, 50, endpoint=False)  
+sinogram_50 = radon(phantom, theta=theta_50)
+
+plot_sinogram(sinogram_50 , title = "Sinogram - 50 projections")
+
+# Take projections at different angles
+theta_100 = np.linspace(0, 360, 100, endpoint=False)  # 720 angles from 0° to 360°
+#sinogram = radon(phantom, theta=theta)
+sinogram_100 = radon(phantom, theta=theta_100)
+
+plot_sinogram(sinogram_100, title = "Sinogram - 100 projections")
+
+# Take projections at different angles
+theta_200 = np.linspace(0, 360, 200, endpoint=False)  # 5 angles from 0° to 360°
+#sinogram = radon(phantom, theta=theta)
+sinogram_200 = radon(phantom, theta=theta_200)
+
+plot_sinogram(sinogram_200 , title = "Sinogram - 200 projections")
+
+
+# ``Questions``: How do the sinograms changes with number of projections? What is the effect of increasing/decrasing the number of projections? 
+# 
+# As the number of projections increases, the sinogram becomes clearer and less blurry. The sinusoidal patterns representing the object appear smooth and continuous, closely approximating the true projection data. This improves the quality of the reconstructed image and reduces artifacts. Conversely, with fewer projections, the sinogram looks sparse and discontinuous. The sinusoidal curves are jagged or broken, making it harder to capture the object’s details and leading to streaks or blurring in the reconstructed image. In this example, increasing the number of projections results in a smooth, continuous sinus pattern, while fewer projections produce a less continuous and more fragmented sinogram.
 
 # ### 2.4 Reconstruction with Filtered Back Projection (FBP) (2.5 points)
 # 
@@ -536,10 +584,83 @@ show_phantom_2d(phantom)
 # 
 # Make use of the ``matplotlib`` to show the original and reconstructed images of the phantom and compare the pixel intensity signal across the lesion profile (similarly to section 2.1).In addition, provide evaluation metric you could consider useful for this purpose (image difference, mean square error (MSE), peak signal to noise ratio (PSNR), structural index similarity (SSIM), etc.). Then, discuss the results.
 
-# In[ ]:
+# In[38]:
 
 
-# insert your code here
+def plot_reconstruction_comparison(original, reconstruction, title_suffix=""):
+    """
+    Plot original and reconstructed images side by side
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+    
+    # Original image
+    im1 = ax1.imshow(original, cmap='gray')
+    ax1.set_title(f'Original Phantom {title_suffix}')
+    ax1.set_xlabel('X (pixels)')
+    ax1.set_ylabel('Y (pixels)')
+    plt.colorbar(im1, ax=ax1, label='Pixel Intensity')
+    
+    # Reconstructed image  
+    im2 = ax2.imshow(reconstruction, cmap='gray')
+    ax2.set_title(f'Reconstructed {title_suffix}')
+    ax2.set_xlabel('X (pixels)')
+    ax2.set_ylabel('Y (pixels)')
+    plt.colorbar(im2, ax=ax2, label='Pixel Intensity')
+    
+    plt.tight_layout()
+    plt.show()
+
+
+# In[42]:
+
+
+from skimage.transform import iradon, iradon_sart
+'''reconstruction = iradon(
+    sinogram,           # Your sinogram data (2D array)
+    theta=angles,       # Projection angles used (array)
+    filter_name='ramp', # Filter type (see below)
+    circle=True,        # Assume object fits in circle
+    interpolation='linear'  # How to interpolate
+)'''
+
+'''Available Filters:
+filters = [
+    'ramp',         # Default - sharpest, most noise
+    'shepp-logan',  # Good balance (recommended)
+    'cosine',       # Similar to shepp-logan  
+    'hamming',      # More smoothing
+    'hann'          # Most smoothing, least noise
+]'''
+
+
+reconstruction = iradon(sinogram_100, theta=theta_100)
+plot_reconstruction_comparison(phantom, reconstruction, "100 projections - No Filter")
+
+reconstruction = iradon(sinogram_200, theta=theta_200)
+plot_reconstruction_comparison(phantom, reconstruction, "200 projections - No Filter")
+
+# Define parameters
+projection_numbers = [100, 200]
+filters = ['ramp', 'shepp-logan', 'cosine', 'hamming', 'hann']
+
+# Generate sinograms for different projection numbers
+sinograms = {}
+for num_proj in projection_numbers:
+    theta = np.linspace(0, 180, num_proj, endpoint=False)
+    sinogram = radon(phantom, theta=theta, circle=True)
+    sinograms[num_proj] = (sinogram, theta)
+
+# Loop through all combinations
+for num_proj in projection_numbers:
+    sinogram, theta = sinograms[num_proj]
+    
+    for filter_name in filters:
+        # Reconstruct with current filter
+        reconstruction = iradon(sinogram, theta=theta, filter_name=filter_name, circle=True)
+        
+        # Plot comparison
+        plot_reconstruction_comparison(phantom, reconstruction, 
+                                     f"{num_proj} projections - {filter_name.title()} Filter")
 
 
 # ### 2.5 Sheep logan phantom (2 points)
@@ -554,16 +675,90 @@ show_phantom_2d(phantom)
 # In order to create **noisy sinograms**, you can add Poison noise (``np.random.poisson``; perhaps with lam = 10) to your noise-free sinograms (not to the image!) and reconstruct the phantom images with the different filters. Plot the reconstruction image and the (horizontal) intensity profile along specific row. Then, comment on the effects of the filters on the reconstructed phatom images.
 # 
 
-# In[ ]:
+# In[62]:
+
+
+def plot_complete_analysis(phantom, sinogram, reconstruction, title_suffix=""):
+    """
+    Plot 4 panels: phantom, sinogram, reconstruction, and intensity profile
+    """
+    fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+    
+    # 1. Original Phantom
+    im1 = axes[0].imshow(phantom, cmap='gray')
+    axes[0].set_title(f'Original Phantom {title_suffix}')
+    axes[0].set_xlabel('X (pixels)')
+    axes[0].set_ylabel('Y (pixels)')
+    plt.colorbar(im1, ax=axes[0], label='Pixel Intensity')
+    
+    # 2. Sinogram
+    im2 = axes[1].imshow(sinogram, cmap='gray', aspect='auto')
+    axes[1].set_title(f'Sinogram {title_suffix}')
+    axes[1].set_xlabel('Projection Angle θ')
+    axes[1].set_ylabel('Detector Position')
+    plt.colorbar(im2, ax=axes[1], label='Projection Intensity')
+    
+    # 3. Reconstruction
+    im3 = axes[2].imshow(reconstruction, cmap='gray')
+    axes[2].set_title(f'Reconstruction {title_suffix}')
+    axes[2].set_xlabel('X (pixels)')
+    axes[2].set_ylabel('Y (pixels)')
+    plt.colorbar(im3, ax=axes[2], label='Pixel Intensity')
+    
+    # 4. Intensity Profile (through middle row)
+    profile_y = phantom.shape[0] // 2
+    profile_original = phantom[profile_y, :]
+    profile_recon = reconstruction[profile_y, :]
+    x_positions = np.arange(phantom.shape[1])
+    
+    axes[3].plot(x_positions, profile_original, 'k-', linewidth=2, label='Original')
+    axes[3].plot(x_positions, profile_recon, 'r--', linewidth=2, label='Reconstructed')
+    axes[3].set_xlabel('X Position (pixels)')
+    axes[3].set_ylabel('Pixel Intensity')
+    axes[3].set_title(f'Intensity Profile (Y={profile_y})')
+    axes[3].legend()
+    axes[3].grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+
+
+# In[63]:
 
 
 from skimage.data import shepp_logan_phantom
 
 logan_phantom = shepp_logan_phantom()
 
+show_phantom_2d(logan_phantom, title="Shepp-Logan Phantom")
 
-# insert your code here
+sinogram_logan_200 = radon(logan_phantom, theta=theta_200)
 
+
+
+
+# Add Poisson noise directly to phantom
+lam = 10.0  # Poisson parameter
+logan_phantom_noisy = np.random.poisson(sinogram_logan_200 * lam) / lam
+
+
+
+reconstruction = iradon(sinogram_logan_200, theta=theta_200)
+filters = [
+    'ramp',         # Default - sharpest, most noise
+    'shepp-logan',  # Good balance (recommended)
+    'cosine',       # Similar to shepp-logan  
+    'hamming',      # More smoothing
+    'hann'          # Most smoothing, least noise
+]
+
+for filter_name in filters:
+    # Reconstruct with current filter
+    reconstruction = iradon(sinogram_logan_200, theta=theta_200, filter_name=filter_name, circle=True)
+    
+    # Plot comparison
+    plot_complete_analysis(logan_phantom, sinogram_logan_200, reconstruction, 
+                         f"200 projections - {filter_name.title()} Filter")
 
 
 # ### 2.6 Deep learning challenge (optional)
