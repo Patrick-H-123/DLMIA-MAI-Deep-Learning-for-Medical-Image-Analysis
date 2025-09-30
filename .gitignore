@@ -1,0 +1,3 @@
+#P2-student/LungCT-Diagnosis
+P2-student/P2-DL4MI-CT_Reconstruction.ipynb
+#jupyter nbconvert --to script P2-DL4MI-CT_Reconstruction.ipynb
